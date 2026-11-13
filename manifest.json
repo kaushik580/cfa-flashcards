@@ -1,17 +1,162 @@
 {
-  "name": "CFA Master Flashcards",
+  "id": "./index.html",
+  "name": "CFA Level 1 Master Flashcards & Study Studio",
   "short_name": "CFA Prep",
+  "description": "Mobile-first CFA Level 1 study studio featuring 2,000 verified flashcards, 10 full mock exams, live CFA Institute research feeds, and offline study tracking.",
+  "lang": "en-US",
+  "dir": "ltr",
   "start_url": "./index.html",
+  "scope": "./",
+  "scope_extensions": [
+    {
+      "origin": "https://*.github.io"
+    }
+  ],
   "display": "standalone",
-  "background_color": "#18191a",
-  "theme_color": "#0084ff",
-  "description": "CFA Level 1 Flashcard Study App",
+  "display_override": [
+    "window-controls-overlay",
+    "tabbed",
+    "standalone",
+    "minimal-ui"
+  ],
+  "tab_strip": {
+    "home_tab": {
+      "url": "./index.html"
+    },
+    "new_tab_button": {
+      "url": "./index.html?tab=new"
+    }
+  },
+  "edge_side_panel": {
+    "preferred_width": 420
+  },
+  "orientation": "portrait-primary",
+  "background_color": "#0f172a",
+  "theme_color": "#2563eb",
+  "categories": [
+    "education",
+    "finance",
+    "productivity"
+  ],
+  "iarc_rating_id": "e84b072d-71b3-4d3e-86ae-31a8ce4e53b7",
+  "related_applications": [],
+  "prefer_related_applications": false,
   "icons": [
     {
-      "src": "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📈</text></svg>",
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-512.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "CFA Level 1 Flashcards Mobile View"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "CFA Level 1 Study Studio Desktop View"
+    }
+  ],
+  "launch_handler": {
+    "client_mode": ["navigate-existing", "auto"]
+  },
+  "note_taking": {
+    "new_note_url": "./index.html?action=new-note"
+  },
+  "shortcuts": [
+    {
+      "name": "Start Mock Exam 1",
+      "short_name": "Mock Exam 1",
+      "description": "Launch 100-question CFA Level 1 Mock Exam 1",
+      "url": "./index.html?deck=CFA_Mock_Exam_1.xlsx",
+      "icons": [
+        {
+          "src": "./icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Study Ethics Part 1",
+      "short_name": "Ethics",
+      "description": "Open CFA Ethical & Professional Standards Deck",
+      "url": "./index.html?deck=CFA_Ethics_Part1_Flashcards.xlsx",
+      "icons": [
+        {
+          "src": "./icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "file_handlers": [
+    {
+      "action": "./index.html",
+      "accept": {
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"]
+      }
+    }
+  ],
+  "protocol_handlers": [
+    {
+      "protocol": "web+cfa",
+      "url": "./index.html?topic=%s"
+    }
+  ],
+  "share_target": {
+    "action": "./index.html",
+    "method": "GET",
+    "params": {
+      "title": "shared_title",
+      "text": "shared_text",
+      "url": "shared_url"
+    }
+  },
+  "widgets": [
+    {
+      "name": "CFA Exam Countdown",
+      "short_name": "CFA Timer",
+      "description": "Tracks days remaining until CFA Level 1 Exam Day",
+      "tag": "cfa-countdown-widget",
+      "template": "cfa-widget-template",
+      "ms_ac_template": "./widget-template.json",
+      "data": "./manifest.json",
+      "type": "application/json",
+      "screenshots": [
+        {
+          "src": "./icon-512.png",
+          "sizes": "512x512",
+          "label": "CFA Countdown Widget"
+        }
+      ],
+      "icons": [
+        {
+          "src": "./icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
     }
   ]
 }
