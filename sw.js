@@ -1,24 +1,27 @@
-const CACHE_NAME = 'cfa-flashcards-v1';
-const urlsToCache = [
-  './',
-  './index.html',
-  'https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js',
-  'https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js',
-  'https://html2canvas.hertzen.com/dist/html2canvas.min.js'
-];
+const CACHE_NAME = 'cfa-flashcards-v2';
 
 self.addEventListener('install', event => {
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(urlsToCache))
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
+    ).then(() => self.clients.claim())
   );
 });
 
+// Network-First: Always fetch latest index.html & Excel files when online, fallback to cache offline
 self.addEventListener('fetch', event => {
+  if (event.request.method !== 'GET') return;
   event.respondWith(
-    caches.match(event.request)
+    fetch(event.request)
       .then(response => {
-        return response || fetch(event.request);
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+        return response;
       })
+      .catch(() => caches.match(event.request))
   );
 });
