@@ -6,25 +6,46 @@
     <title>CFA Master Flashcards</title>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f4f9; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
-        .header { text-align: center; margin-bottom: 20px; width: 100%; max-width: 400px; }
-        select { width: 100%; padding: 10px; font-size: 16px; border-radius: 8px; border: 1px solid #ccc; margin-bottom: 20px; }
-        .card-container { perspective: 1000px; width: 100%; max-width: 400px; height: 250px; margin-bottom: 20px; cursor: pointer; display: none; }
-        .card { width: 100%; height: 100%; position: relative; transition: transform 0.6s; transform-style: preserve-3d; border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        :root { --bg-color: #f4f4f9; --text-color: #333; --card-bg: #fff; --card-back-bg: #002060; --card-border: #ddd; }
+        body.dark-mode { --bg-color: #121212; --text-color: #e0e0e0; --card-bg: #1e1e1e; --card-back-bg: #0a1930; --card-border: #333; }
+        
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg-color); color: var(--text-color); display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; transition: background-color 0.3s, color 0.3s; }
+        
+        .top-bar { width: 100%; max-width: 400px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .top-bar button { padding: 8px 12px; font-size: 14px; background: #6c757d; border-radius: 6px; }
+        
+        .header { text-align: center; width: 100%; max-width: 400px; }
+        select { width: 100%; padding: 12px; font-size: 16px; border-radius: 8px; border: 1px solid var(--card-border); background-color: var(--card-bg); color: var(--text-color); margin-bottom: 15px; }
+        
+        .progress-container { width: 100%; background-color: #ddd; border-radius: 4px; height: 8px; margin-bottom: 10px; overflow: hidden; }
+        .progress-bar-fill { height: 100%; background-color: #007bff; width: 0%; transition: width 0.3s; }
+        .progress-text { font-size: 14px; margin-bottom: 20px; font-weight: bold; }
+
+        .card-container { perspective: 1000px; width: 100%; max-width: 400px; height: 280px; margin-bottom: 20px; cursor: pointer; display: none; }
+        .card { width: 100%; height: 100%; position: relative; transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); transform-style: preserve-3d; border-radius: 12px; box-shadow: 0 6px 12px rgba(0,0,0,0.15); }
         .card.is-flipped { transform: rotateY(180deg); }
-        .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; border-radius: 12px; text-align: center; background: white; }
-        .card-back { transform: rotateY(180deg); background: #002060; color: white; }
+        
+        .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 25px; box-sizing: border-box; border-radius: 12px; text-align: center; background: var(--card-bg); border: 1px solid var(--card-border); font-size: 18px; line-height: 1.4; overflow-y: auto; }
+        .card-back { transform: rotateY(180deg); background: var(--card-back-bg); color: white; border: none; font-size: 16px; }
+        
         .controls { display: none; width: 100%; max-width: 400px; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        button { padding: 10px 20px; font-size: 16px; border: none; border-radius: 8px; background-color: #007bff; color: white; cursor: pointer; }
-        button:disabled { background-color: #ccc; }
-        .hint-container { width: 100%; max-width: 400px; text-align: center; display: none; }
-        .hint-text { margin-top: 10px; font-style: italic; color: #555; display: none; }
+        button { padding: 12px 20px; font-size: 16px; border: none; border-radius: 8px; background-color: #007bff; color: white; cursor: pointer; transition: background 0.2s; font-weight: bold; }
+        button:active { transform: scale(0.98); }
+        button:disabled { background-color: #aaa; cursor: not-allowed; }
+        
+        .hint-container { width: 100%; max-width: 400px; text-align: center; display: none; margin-bottom: 40px; }
+        .hint-text { margin-top: 15px; font-style: italic; color: #ffae42; display: none; font-size: 15px; padding: 10px; border-radius: 8px; background: rgba(255, 174, 66, 0.1); }
     </style>
 </head>
 <body>
 
+    <div class="top-bar">
+        <button onclick="toggleDarkMode()" id="dark-mode-btn">🌙 Dark Mode</button>
+        <button onclick="shuffleDeck()" id="shuffle-btn" style="display:none; background:#28a745;">🔀 Shuffle</button>
+    </div>
+
     <div class="header">
-        <h2>CFA Level 1 Flashcards</h2>
+        <h2 style="margin-top:0;">CFA Level 1 Flashcards</h2>
         <select id="subject-select" onchange="loadSelectedDeck()">
             <option value="">-- Select a Subject to Study --</option>
             <option value="CFA_Ethics_Part1_Flashcards.xlsx">Ethics (Part 1)</option>
@@ -48,7 +69,11 @@
             <option value="CFA_Portfolio_Part1_Flashcards.xlsx">Portfolio Construction (Part 1)</option>
             <option value="CFA_Portfolio_Part2_Flashcards.xlsx">Portfolio Construction (Part 2)</option>
         </select>
-        <div id="progress"></div>
+        
+        <div class="progress-container" id="progress-container" style="display:none;">
+            <div class="progress-bar-fill" id="progress-bar-fill"></div>
+        </div>
+        <div class="progress-text" id="progress"></div>
     </div>
 
     <div class="card-container" id="card-container" onclick="flipCard()">
@@ -59,18 +84,31 @@
     </div>
 
     <div class="controls" id="controls">
-        <button onclick="prevCard()" id="btn-prev">Previous</button>
-        <button onclick="nextCard()" id="btn-next">Next</button>
+        <button onclick="prevCard()" id="btn-prev">⬅️ Prev</button>
+        <button onclick="nextCard()" id="btn-next">Next ➡️</button>
     </div>
 
     <div class="hint-container" id="hint-container">
-        <button onclick="toggleHint()" style="background-color: #6c757d;">Show Hint</button>
+        <button onclick="toggleHint()" style="background-color: #17a2b8;">💡 Show Hint</button>
         <div class="hint-text" id="hint-text"></div>
     </div>
 
     <script>
-        let flashcards = [];
+        let currentDeck = [];
         let currentIndex = 0;
+
+        // Dark Mode Logic
+        if(localStorage.getItem('cfaDarkMode') === 'true') {
+            document.body.classList.add('dark-mode');
+            document.getElementById('dark-mode-btn').innerText = '☀️ Light Mode';
+        }
+
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('cfaDarkMode', isDark);
+            document.getElementById('dark-mode-btn').innerText = isDark ? '☀️ Light Mode' : '🌙 Dark Mode';
+        }
 
         async function loadSelectedDeck() {
             const filename = document.getElementById('subject-select').value;
@@ -79,55 +117,106 @@
             document.getElementById('card-container').style.display = 'none';
             document.getElementById('controls').style.display = 'none';
             document.getElementById('hint-container').style.display = 'none';
-            document.getElementById('progress').innerText = 'Loading...';
+            document.getElementById('shuffle-btn').style.display = 'none';
+            document.getElementById('progress-container').style.display = 'none';
+            document.getElementById('progress').innerText = 'Downloading deck...';
 
             try {
                 const response = await fetch(filename);
+                if (!response.ok) throw new Error("File not found on server.");
                 const arrayBuffer = await response.arrayBuffer();
                 const workbook = XLSX.read(arrayBuffer, { type: 'array' });
                 const firstSheet = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[firstSheet];
                 const data = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
-                flashcards = data.slice(1).filter(row => row.length >= 3).map(row => ({
+                currentDeck = data.slice(1).filter(row => row.length >= 3).map(row => ({
                     front: row[1] || "",
                     back: row[2] || "",
                     hint: row[3] || ""
                 }));
 
-                if (flashcards.length > 0) {
+                if (currentDeck.length > 0) {
                     currentIndex = 0;
                     document.getElementById('card-container').style.display = 'block';
                     document.getElementById('controls').style.display = 'flex';
                     document.getElementById('hint-container').style.display = 'block';
+                    document.getElementById('shuffle-btn').style.display = 'block';
+                    document.getElementById('progress-container').style.display = 'block';
                     updateCard();
                 } else {
                     document.getElementById('progress').innerText = 'Error: No valid flashcards found.';
                 }
             } catch (error) {
-                document.getElementById('progress').innerText = 'Error loading deck. Ensure the Excel file is uploaded to GitHub.';
+                document.getElementById('progress').innerText = 'Error: Make sure all .xlsx files are uploaded to GitHub!';
             }
         }
 
         function updateCard() {
             document.getElementById('card').classList.remove('is-flipped');
-            document.getElementById('card-front').innerText = flashcards[currentIndex].front;
-            document.getElementById('card-back').innerText = flashcards[currentIndex].back;
-            document.getElementById('hint-text').innerText = flashcards[currentIndex].hint;
-            document.getElementById('hint-text').style.display = 'none';
+            document.getElementById('card-front').innerText = currentDeck[currentIndex].front;
+            document.getElementById('card-back').innerText = currentDeck[currentIndex].back;
             
-            document.getElementById('progress').innerText = `Card ${currentIndex + 1} of ${flashcards.length}`;
+            const hintText = currentDeck[currentIndex].hint;
+            document.getElementById('hint-text').innerText = hintText;
+            document.getElementById('hint-text').style.display = 'none';
+            document.querySelector('.hint-container button').style.display = hintText ? 'inline-block' : 'none';
+            
+            // Update Progress
+            const percent = ((currentIndex + 1) / currentDeck.length) * 100;
+            document.getElementById('progress-bar-fill').style.width = percent + '%';
+            document.getElementById('progress').innerText = `Card ${currentIndex + 1} of ${currentDeck.length}`;
+            
+            // Disable/Enable Buttons
             document.getElementById('btn-prev').disabled = currentIndex === 0;
-            document.getElementById('btn-next').disabled = currentIndex === flashcards.length - 1;
+            document.getElementById('btn-next').disabled = currentIndex === currentDeck.length - 1;
         }
 
         function flipCard() { document.getElementById('card').classList.toggle('is-flipped'); }
+        
         function toggleHint() { 
             const hint = document.getElementById('hint-text');
             hint.style.display = hint.style.display === 'none' ? 'block' : 'none';
         }
-        function nextCard() { if (currentIndex < flashcards.length - 1) { currentIndex++; updateCard(); } }
+        
+        function nextCard() { if (currentIndex < currentDeck.length - 1) { currentIndex++; updateCard(); } }
         function prevCard() { if (currentIndex > 0) { currentIndex--; updateCard(); } }
+
+        function shuffleDeck() {
+            for (let i = currentDeck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [currentDeck[i], currentDeck[j]] = [currentDeck[j], currentDeck[i]];
+            }
+            currentIndex = 0;
+            updateCard();
+        }
+
+        // --- Keyboard Shortcuts ---
+        document.addEventListener('keydown', (e) => {
+            if(currentDeck.length === 0) return;
+            if (e.key === 'ArrowRight') nextCard();
+            else if (e.key === 'ArrowLeft') prevCard();
+            else if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                e.preventDefault(); // Prevent page scrolling on spacebar
+                flipCard();
+            }
+        });
+
+        // --- Mobile Swipe Gestures ---
+        let touchstartX = 0;
+        let touchendX = 0;
+        const slider = document.getElementById('card-container');
+        
+        slider.addEventListener('touchstart', e => { touchstartX = e.changedTouches[0].screenX; });
+        slider.addEventListener('touchend', e => { 
+            touchendX = e.changedTouches[0].screenX; 
+            handleSwipe(); 
+        });
+
+        function handleSwipe() {
+            if (touchendX < touchstartX - 50) nextCard(); // Swipe Left
+            if (touchendX > touchstartX + 50) prevCard(); // Swipe Right
+        }
     </script>
 </body>
 </html>
