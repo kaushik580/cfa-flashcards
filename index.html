@@ -1,19 +1,3 @@
-You are completely right, and I apologize for missing the mark on that. I hardcoded a static list which completely defeated the purpose of having a live, dynamic app, and I accidentally reintroduced the annoying vertical scroll. That's on me!
-
-I have completely redesigned the code from the ground up to fix exactly those two things:
-
-1. **True Dynamic Scraping (Official CFA Feeds):** The app now uses JavaScript to dynamically scrape the **CFA Institute's Official "Enterprising Investor" publication** and **Investopedia's Market feed** via RSS-to-JSON. Every single time your sister opens the app, it fetches the newest articles on financial theory, portfolio methodology, and market updates directly from the CFA Institute. Nothing is hardcoded anymore.
-2. **Zero Long Scrolling (Horizontal Carousel):** I destroyed the vertical list. The Learning Hub is now a **horizontal swipe carousel** (just like Netflix or Instagram). It takes up a small, fixed amount of space at the bottom of her screen. She just swipes left to see the live articles, meaning there is zero long scrolling required.
-
-Here is the ultimate, compact, fully dynamic app code.
-
-### How to update it:
-
-1. Open your `index.html` file on GitHub.
-2. Click the pencil icon to edit.
-3. Delete the old code, paste this inside, and click **Commit changes**.
-
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -28,6 +12,7 @@ Here is the ultimate, compact, fully dynamic app code.
 
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
@@ -36,7 +21,7 @@ Here is the ultimate, compact, fully dynamic app code.
             --bg-gradient: linear-gradient(135deg, #f1f5f9, #e2e8f0);
             --text-color: #1e293b; 
             --muted-text: #64748b;
-            --glass-bg: rgba(255, 255, 255, 0.75);
+            --glass-bg: rgba(255, 255, 255, 0.78);
             --glass-border: rgba(255, 255, 255, 0.9);
             --card-bg: #ffffff; 
             --card-back-bg: linear-gradient(135deg, #1e3a8a, #0f172a); 
@@ -48,7 +33,7 @@ Here is the ultimate, compact, fully dynamic app code.
             --bg-gradient: linear-gradient(135deg, #0f172a, #020617);
             --text-color: #f8fafc; 
             --muted-text: #94a3b8;
-            --glass-bg: rgba(30, 41, 59, 0.75);
+            --glass-bg: rgba(30, 41, 59, 0.78);
             --glass-border: rgba(255, 255, 255, 0.08);
             --card-bg: #1e293b; 
             --card-back-bg: linear-gradient(135deg, #1e3a8a, #020617); 
@@ -57,110 +42,117 @@ Here is the ultimate, compact, fully dynamic app code.
         }
         
         body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif; 
             background: var(--bg-gradient); 
             color: var(--text-color); 
             display: flex; 
             flex-direction: column; 
             align-items: center; 
-            padding: 15px; 
+            padding: 14px; 
             margin: 0; 
             min-height: 100vh;
             transition: background 0.3s ease; 
             overflow-x: hidden; 
+            box-sizing: border-box;
         }
         
-        /* Compact Glass Panel */
         .glass-panel {
             background: var(--glass-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
             border: 1px solid var(--glass-border);
             border-radius: 20px;
-            padding: 15px;
+            padding: 16px;
             width: 100%;
             max-width: 450px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-            margin-bottom: 15px;
+            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.08);
+            margin-bottom: 14px;
             box-sizing: border-box;
         }
 
-        /* Stats Row */
-        .dashboard-stats { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 15px; }
-        .stat-box { text-align: center; width: 48%; background: rgba(100, 116, 139, 0.08); border-radius: 12px; padding: 10px; cursor: pointer; transition: 0.2s; }
-        .stat-box:hover { background: rgba(100, 116, 139, 0.15); }
-        .stat-title { font-size: 11px; font-weight: 700; color: var(--muted-text); text-transform: uppercase; margin-bottom: 2px; }
+        /* Dashboard Stats */
+        .dashboard-stats { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+        .stat-box { text-align: center; width: 48%; background: rgba(100, 116, 139, 0.09); border-radius: 12px; padding: 9px; cursor: pointer; transition: 0.2s; }
+        .stat-box:hover { background: rgba(100, 116, 139, 0.16); }
+        .stat-title { font-size: 10px; font-weight: 700; color: var(--muted-text); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 2px; }
         .stat-val { font-size: 18px; font-weight: 800; color: var(--btn-primary); }
 
         /* Action Buttons */
-        .top-bar { display: flex; justify-content: center; gap: 8px; margin-bottom: 15px; }
-        .action-btn { padding: 8px 12px; font-size: 12px; background: rgba(100, 116, 139, 0.15); color: var(--text-color); border: 1px solid var(--glass-border); border-radius: 10px; cursor: pointer; font-weight: 700; }
+        .top-bar { display: flex; justify-content: center; gap: 7px; flex-wrap: wrap; margin-bottom: 12px; }
+        .action-btn { padding: 8px 11px; font-size: 12px; background: rgba(100, 116, 139, 0.15); color: var(--text-color); border: 1px solid var(--glass-border); border-radius: 10px; cursor: pointer; font-weight: 700; transition: 0.15s; }
+        .action-btn:active { transform: scale(0.95); }
         .action-btn.active-toggle { background: var(--btn-primary); color: white; border-color: var(--btn-primary); }
 
-        select { width: 100%; padding: 12px; font-size: 14px; border-radius: 12px; border: 1px solid var(--glass-border); background-color: var(--card-bg); color: var(--text-color); margin-bottom: 15px; font-weight: 700; outline: none; }
+        h2 { margin: 0 0 12px 0; font-size: 20px; font-weight: 800; text-align: center; letter-spacing: -0.4px; }
+
+        select { width: 100%; padding: 12px; font-size: 14px; border-radius: 12px; border: 1px solid var(--glass-border); background-color: var(--card-bg); color: var(--text-color); margin-bottom: 12px; font-weight: 700; outline: none; }
         
-        .progress-container { width: 100%; background-color: rgba(100, 116, 139, 0.15); border-radius: 10px; height: 6px; margin-bottom: 6px; }
-        .progress-bar-fill { height: 100%; background: var(--btn-primary); width: 0%; transition: width 0.4s ease; border-radius: 10px; }
+        .progress-container { width: 100%; background-color: rgba(100, 116, 139, 0.15); border-radius: 10px; height: 6px; margin-bottom: 6px; overflow: hidden; }
+        .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--btn-primary)); width: 0%; transition: width 0.4s ease; border-radius: 10px; }
         .progress-text { font-size: 12px; font-weight: 700; text-align: center; color: var(--muted-text); }
 
-        /* Flashcard Area (Fixed Height, No Scroll) */
-        .main-stage { width: 100%; max-width: 450px; display: flex; flex-direction: column; align-items: center; margin-bottom: 15px; }
-        .card-container { perspective: 1500px; width: 100%; height: 280px; cursor: pointer; display: none; margin-bottom: 15px; }
-        .card { width: 100%; height: 100%; position: relative; transition: transform 0.5s cubic-bezier(0.4, 0.2, 0.2, 1); transform-style: preserve-3d; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        /* Single-Card Flashcard Area */
+        .main-stage { width: 100%; max-width: 450px; display: flex; flex-direction: column; align-items: center; margin-bottom: 14px; }
+        .card-container { perspective: 1500px; width: 100%; height: 270px; cursor: pointer; display: none; margin-bottom: 12px; }
+        .card { width: 100%; height: 100%; position: relative; transition: transform 0.55s cubic-bezier(0.4, 0.2, 0.2, 1); transform-style: preserve-3d; border-radius: 20px; box-shadow: 0 10px 22px rgba(0,0,0,0.12); }
         .card.is-flipped { transform: rotateY(180deg); }
         
-        .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 25px; box-sizing: border-box; border-radius: 20px; text-align: center; font-size: 17px; line-height: 1.5; font-weight: 700; overflow-y: auto; }
+        .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 22px; box-sizing: border-box; border-radius: 20px; text-align: center; font-size: 16px; line-height: 1.5; font-weight: 700; overflow-y: auto; }
         .card-front { background: var(--card-bg); border: 1px solid var(--glass-border); }
         .card-back { transform: rotateY(180deg); background: var(--card-back-bg); color: white; }
         
         .controls { display: none; width: 100%; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
         .nav-btn { flex: 1; padding: 12px; font-size: 15px; border: none; border-radius: 12px; background: var(--btn-primary); color: white; cursor: pointer; font-weight: 800; }
-        .nav-btn:disabled { background: #94a3b8; opacity: 0.5; }
-        
-        .hint-text { font-style: italic; color: #d97706; display: none; font-size: 13px; padding: 10px; border-radius: 10px; background: rgba(217, 119, 6, 0.1); width: 100%; text-align: center; font-weight: 700; margin-bottom: 10px; }
+        .nav-btn:disabled { background: #94a3b8; opacity: 0.5; cursor: not-allowed; }
 
-        /* Dynamic Horizontal Carousel (NO Vertical Scroll) */
+        .utilities { display: none; width: 100%; justify-content: center; gap: 10px; margin-bottom: 10px; }
+        .hint-text { font-style: italic; color: #d97706; display: none; font-size: 13px; padding: 10px; border-radius: 10px; background: rgba(217, 119, 6, 0.12); width: 100%; box-sizing: border-box; text-align: center; font-weight: 700; margin-bottom: 10px; }
+
+        /* Dynamic Horizontal Swipe Carousel (Zero Vertical Scroll) */
         .live-hub-wrapper { width: 100%; max-width: 450px; overflow: hidden; }
-        .live-hub-title { font-size: 14px; font-weight: 800; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-        .live-badge { background: #ef4444; color: white; font-size: 10px; padding: 3px 6px; border-radius: 6px; text-transform: uppercase; animation: pulse 2s infinite; }
+        .live-hub-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .live-hub-title { font-size: 13px; font-weight: 800; }
+        .live-controls { display: flex; align-items: center; gap: 6px; }
+        .live-badge { background: #ef4444; color: white; font-size: 10px; font-weight: 800; padding: 3px 7px; border-radius: 6px; text-transform: uppercase; animation: pulse 2s infinite; }
         
         .carousel {
             display: flex;
             overflow-x: auto;
             scroll-snap-type: x mandatory;
-            gap: 15px;
-            padding-bottom: 10px;
-            scrollbar-width: none; /* Firefox */
+            gap: 12px;
+            padding-bottom: 6px;
+            scrollbar-width: none;
         }
-        .carousel::-webkit-scrollbar { display: none; } /* Chrome/Safari */
+        .carousel::-webkit-scrollbar { display: none; }
         
         .carousel-item {
-            flex: 0 0 85%;
+            flex: 0 0 84%;
             scroll-snap-align: center;
             background: var(--card-bg);
             border: 1px solid var(--glass-border);
             border-radius: 16px;
-            padding: 15px;
+            padding: 14px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            min-height: 120px;
+            min-height: 112px;
+            cursor: pointer;
+            box-sizing: border-box;
         }
-        .carousel-item h4 { margin: 0 0 8px 0; font-size: 14px; font-weight: 800; color: var(--btn-primary); line-height: 1.3; }
+        .carousel-item h4 { margin: 0 0 6px 0; font-size: 14px; font-weight: 800; color: var(--btn-primary); line-height: 1.3; }
         .carousel-item p { margin: 0; font-size: 12px; color: var(--muted-text); font-weight: 600; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-        .carousel-source { font-size: 10px; font-weight: 800; color: var(--text-color); margin-top: 10px; text-transform: uppercase; opacity: 0.7; }
+        .carousel-source { font-size: 10px; font-weight: 800; color: var(--text-color); margin-top: 8px; text-transform: uppercase; opacity: 0.7; }
 
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
 
-    <!-- Stats & Controls -->
     <div class="glass-panel">
         <div class="dashboard-stats">
-            <div class="stat-box" onclick="changeExamDate()">
-                <div class="stat-title">Exam Day</div>
+            <div class="stat-box" onclick="changeExamDate()" title="Tap to edit exam date">
+                <div class="stat-title">Exam Countdown ✏️</div>
                 <div class="stat-val" id="countdown">-- Days</div>
             </div>
             <div class="stat-box">
@@ -172,11 +164,13 @@ Here is the ultimate, compact, fully dynamic app code.
         <div class="top-bar">
             <button class="action-btn" onclick="toggleDarkMode()" id="dark-mode-btn">🌙 Dark</button>
             <button class="action-btn" onclick="toggleReadMode()" id="view-btn">📖 Read Mode</button>
-            <button class="action-btn" onclick="toggleHint()" id="btn-hint">💡 Hint</button>
+            <button class="action-btn" onclick="shuffleDeck()" id="shuffle-btn" style="display:none; background:rgba(139,92,246,0.2); color:#a78bfa;">🔀 Shuffle</button>
+            <button class="action-btn" onclick="resetProgress()" id="reset-btn" style="display:none; background:rgba(239,68,68,0.2); color:#f87171;">🔄 Reset</button>
         </div>
 
+        <h2>CFA Master Flashcards</h2>
         <select id="subject-select" onchange="loadSelectedDeck()">
-            <option value="">-- Choose a Flashcard Deck --</option>
+            <option value="">-- Choose a Subject to Study --</option>
             <option value="CFA_Ethics_Part1_Flashcards.xlsx">1. Ethics (Part 1)</option>
             <option value="CFA_Ethics_Part2_Flashcards.xlsx">1. Ethics (Part 2)</option>
             <option value="CFA_Quant_Part1_Flashcards.xlsx">2. Quantitative Methods (Part 1)</option>
@@ -202,10 +196,10 @@ Here is the ultimate, compact, fully dynamic app code.
         <div class="progress-container" id="progress-container" style="display:none;">
             <div class="progress-bar-fill" id="progress-bar-fill"></div>
         </div>
-        <div class="progress-text" id="progress">Select a deck or swipe live news below</div>
+        <div class="progress-text" id="progress">Select a deck or swipe live CFA updates below</div>
     </div>
 
-    <!-- Main Flashcard Stage -->
+    <!-- Main Single-Card Flashcard Stage -->
     <div class="main-stage">
         <div class="card-container" id="card-container" onclick="flipCard()">
             <div class="card" id="card">
@@ -214,109 +208,105 @@ Here is the ultimate, compact, fully dynamic app code.
             </div>
         </div>
 
-        <div class="hint-text" id="hint-text"></div>
-
         <div class="controls" id="controls">
             <button class="nav-btn" onclick="prevCard()" id="btn-prev">⬅️ Prev</button>
             <button class="nav-btn" onclick="nextCard()" id="btn-next">Next ➡️</button>
         </div>
+
+        <div class="utilities" id="utilities">
+            <button class="action-btn" onclick="toggleHint()" id="btn-hint" style="background:rgba(245,158,11,0.2); color:#fbbf24;">💡 Show Hint</button>
+            <button class="action-btn" onclick="saveAsImage()" style="background:rgba(16,185,129,0.2); color:#34d399;">📸 Save Image</button>
+        </div>
+
+        <div class="hint-text" id="hint-text"></div>
     </div>
 
-    <!-- DYNAMIC LIVE CAROUSEL (No Vertical Scroll) -->
+    <!-- Dynamic Horizontal Carousel (Scrapes Fresh CFA & Market Info on Every Load) -->
     <div class="live-hub-wrapper">
-        <div class="live-hub-title">
-            <span>📚 Live CFA Theory & Updates</span>
-            <span class="live-badge">Live Feed</span>
+        <div class="live-hub-header">
+            <span class="live-hub-title">📚 Live CFA Theory & Market Feed</span>
+            <div class="live-controls">
+                <button class="action-btn" onclick="fetchDynamicContent()" style="padding:3px 8px; font-size:11px;">↻ Refresh</button>
+                <span class="live-badge">Live</span>
+            </div>
         </div>
         <div class="carousel" id="dynamic-carousel">
-            <!-- JavaScript will inject scraped articles here -->
             <div class="carousel-item">
-                <h4>Scraping CFA Institute...</h4>
-                <p>Pulling the latest methodologies, theory, and market data...</p>
+                <h4>Connecting to Live CFA Feeds...</h4>
+                <p>Scraping latest investment theory, ethics updates, and market research...</p>
             </div>
         </div>
     </div>
 
     <script>
-        // --- 1. Dynamic Live Scraper (CFA Institute & Investopedia via RSS-to-JSON) ---
-        // This runs EVERY time the app is opened, pulling fresh data dynamically.
+        // --- 1. Live Dynamic Scraper (Runs Every Open with Cache-Buster) ---
         async function fetchDynamicContent() {
             const carousel = document.getElementById('dynamic-carousel');
-            
-            // CFA Institute's Official "Enterprising Investor" RSS Feed (Theory, Methodology, Economics)
-            const cfaUrl = encodeURIComponent('https://blogs.cfainstitute.org/investor/feed/');
-            // Investopedia Markets RSS (Live Financial Updates)
-            const invUrl = encodeURIComponent('https://www.investopedia.com/markets-news-4427704');
-            
+            carousel.innerHTML = `<div class="carousel-item"><h4>Fetching Latest CFA Research...</h4><p>Pulling live articles from CFA Institute & financial feeds...</p></div>`;
+
+            const ts = Date.now();
+            const feeds = [
+                { name: "CFA Institute • Enterprising Investor", url: "https://blogs.cfainstitute.org/investor/feed/" },
+                { name: "CFA Institute • Market Integrity", url: "https://blogs.cfainstitute.org/marketintegrity/feed/" },
+                { name: "CNBC • Global Finance", url: "https://search.cnbc.com/rs/search/combinedcms/view.xml?id=10000664" }
+            ];
+
             try {
-                // Fetch both feeds concurrently
-                const [cfaRes, invRes] = await Promise.all([
-                    fetch(`https://api.rss2json.com/v1/api.json?rss_url=${cfaUrl}`),
-                    fetch(`https://api.rss2json.com/v1/api.json?rss_url=${invUrl}`)
-                ]);
+                const results = await Promise.allSettled(
+                    feeds.map(f =>
+                        fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(f.url)}&_=${ts}`)
+                            .then(r => r.json())
+                            .then(data => ({ name: f.name, data }))
+                    )
+                );
 
-                const cfaData = await cfaRes.json();
-                const invData = await invRes.json();
+                let cards = [];
+                results.forEach(res => {
+                    if (res.status === 'fulfilled' && res.value.data.status === 'ok' && Array.isArray(res.value.data.items)) {
+                        res.value.data.items.slice(0, 4).forEach(item => {
+                            const cleanDesc = (item.description || "").replace(/<[^>]*>?/gm, '').trim().slice(0, 115) + "...";
+                            cards.push(`
+                                <div class="carousel-item" onclick="window.open('${item.link}', '_blank', 'noopener')">
+                                    <div>
+                                        <h4>${item.title}</h4>
+                                        <p>${cleanDesc}</p>
+                                    </div>
+                                    <div class="carousel-source">${res.value.name} • ${new Date(item.pubDate).toLocaleDateString()}</div>
+                                </div>
+                            `);
+                        });
+                    }
+                });
 
-                let html = "";
-                
-                // Process CFA Institute Official Data
-                if (cfaData.status === 'ok') {
-                    cfaData.items.slice(0, 4).forEach(item => {
-                        const cleanDesc = item.description.replace(/<[^>]*>?/gm, '').slice(0, 110) + "...";
-                        html += `
-                        <div class="carousel-item" onclick="window.open('${item.link}', '_blank')">
-                            <div>
-                                <h4>${item.title}</h4>
-                                <p>${cleanDesc}</p>
-                            </div>
-                            <div class="carousel-source">CFA Institute • ${new Date(item.pubDate).toLocaleDateString()}</div>
-                        </div>`;
-                    });
+                if (cards.length > 0) {
+                    carousel.innerHTML = cards.join('');
+                } else {
+                    throw new Error("Empty feed response");
                 }
-
-                // Process Investopedia Data
-                if (invData.status === 'ok') {
-                    invData.items.slice(0, 2).forEach(item => {
-                        const cleanDesc = item.description.replace(/<[^>]*>?/gm, '').slice(0, 110) + "...";
-                        html += `
-                        <div class="carousel-item" onclick="window.open('${item.link}', '_blank')">
-                            <div>
-                                <h4 style="color:#0ea5e9;">${item.title}</h4>
-                                <p>${cleanDesc}</p>
-                            </div>
-                            <div class="carousel-source">Live Market News • ${new Date(item.pubDate).toLocaleDateString()}</div>
-                        </div>`;
-                    });
-                }
-
-                // If successful, inject the live scraped data into the carousel
-                if(html !== "") carousel.innerHTML = html;
-
-            } catch (error) {
-                // Fallback ONLY if the user is completely offline
+            } catch (err) {
                 carousel.innerHTML = `
-                <div class="carousel-item">
-                    <h4>Offline Mode</h4>
-                    <p>Connect to the internet to scrape live CFA Institute theories and methodologies.</p>
-                </div>`;
+                    <div class="carousel-item" onclick="window.open('https://www.cfainstitute.org/programs/cfa/candidate', '_blank')">
+                        <div><h4>CFA Institute Candidate Portal</h4><p>Access official curriculum updates, Practical Skills Modules (PSM), and mock exams.</p></div>
+                        <div class="carousel-source">Official CFA Resource ↗</div>
+                    </div>
+                    <div class="carousel-item" onclick="window.open('https://blogs.cfainstitute.org/investor/', '_blank')">
+                        <div><h4>CFA Enterprising Investor</h4><p>Read current practitioner research on valuation, fixed income, derivatives, and portfolio construction.</p></div>
+                        <div class="carousel-source">CFA Institute Publication ↗</div>
+                    </div>
+                `;
             }
         }
-        
-        // Execute dynamic scraper immediately on load
         fetchDynamicContent();
 
-
-        // --- 2. State & Timer Variables ---
+        // --- 2. State & Timers ---
         let currentDeck = [], currentIndex = 0, currentFilename = "", isReadMode = false;
         let studySeconds = parseInt(localStorage.getItem('cfa_study_time')) || 0;
         let savedExamDate = localStorage.getItem('cfa_exam_date') || "2027-05-11";
         let studyTimer;
 
-        // --- 3. Editable Countdown ---
         function updateCountdown() {
             const target = new Date(savedExamDate + "T09:00:00").getTime();
-            const days = Math.ceil((target - new Date().getTime()) / 86400000);
+            const days = Math.ceil((target - Date.now()) / 86400000);
             document.getElementById("countdown").innerText = days > 0 ? `${days} Days` : "Exam Day!";
         }
         function changeExamDate() {
@@ -329,14 +319,13 @@ Here is the ultimate, compact, fully dynamic app code.
         }
         updateCountdown();
 
-        // --- 4. Study Timer ---
         function updateStudyTimeUI() {
             document.getElementById("study-time").innerText = `${Math.floor(studySeconds / 3600)}h ${Math.floor((studySeconds % 3600) / 60)}m`;
         }
         updateStudyTimeUI();
-        
+
         function startTimer() {
-            if(studyTimer) clearInterval(studyTimer);
+            if (studyTimer) clearInterval(studyTimer);
             studyTimer = setInterval(() => {
                 studySeconds++;
                 if (studySeconds % 10 === 0) localStorage.setItem('cfa_study_time', studySeconds);
@@ -344,7 +333,7 @@ Here is the ultimate, compact, fully dynamic app code.
             }, 1000);
         }
 
-        // --- 5. UI Toggles ---
+        // --- 3. UI Toggles ---
         if (localStorage.getItem('cfaDarkMode') === 'true') {
             document.body.classList.add('dark-mode');
             document.getElementById('dark-mode-btn').innerText = '☀️ Light';
@@ -364,47 +353,60 @@ Here is the ultimate, compact, fully dynamic app code.
             if (currentDeck.length > 0) updateCard();
         }
 
-        function toggleHint() { 
+        function toggleHint() {
             const hint = document.getElementById('hint-text');
             hint.style.display = hint.style.display === 'none' ? 'block' : 'none';
         }
 
-        // --- 6. Flashcard Core Logic ---
+        // --- 4. Flashcard Logic ---
         async function loadSelectedDeck() {
             currentFilename = document.getElementById('subject-select').value;
             if (!currentFilename) {
                 document.getElementById('card-container').style.display = 'none';
                 document.getElementById('controls').style.display = 'none';
+                document.getElementById('utilities').style.display = 'none';
+                document.getElementById('shuffle-btn').style.display = 'none';
+                document.getElementById('reset-btn').style.display = 'none';
                 document.getElementById('progress-container').style.display = 'none';
                 document.getElementById('hint-text').style.display = 'none';
                 clearInterval(studyTimer);
-                document.getElementById('progress').innerText = 'Select a deck or swipe live news below';
+                document.getElementById('progress').innerText = 'Select a deck or swipe live CFA updates below';
                 return;
             }
 
             startTimer();
             document.getElementById('card-container').style.display = 'none';
             document.getElementById('controls').style.display = 'none';
+            document.getElementById('utilities').style.display = 'none';
             document.getElementById('progress').innerText = 'Loading verified deck...';
 
             try {
                 const response = await fetch(currentFilename);
+                if (!response.ok) throw new Error("File not found");
                 const arrayBuffer = await response.arrayBuffer();
                 const workbook = XLSX.read(arrayBuffer, { type: 'array' });
                 const data = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
 
-                currentDeck = data.slice(1).filter(row => row.length >= 3).map(row => ({ front: row[1] || "", back: row[2] || "", hint: row[3] || "" }));
+                currentDeck = data.slice(1).filter(row => row.length >= 3).map(row => ({
+                    front: row[1] || "",
+                    back: row[2] || "",
+                    hint: row[3] || ""
+                }));
 
                 if (currentDeck.length > 0) {
                     currentIndex = parseInt(localStorage.getItem(`cfa_progress_${currentFilename}`)) || 0;
                     if (currentIndex >= currentDeck.length) currentIndex = 0;
+
                     document.getElementById('card-container').style.display = 'block';
                     document.getElementById('controls').style.display = 'flex';
+                    document.getElementById('utilities').style.display = 'flex';
+                    document.getElementById('shuffle-btn').style.display = 'inline-block';
+                    document.getElementById('reset-btn').style.display = 'inline-block';
                     document.getElementById('progress-container').style.display = 'block';
                     updateCard();
                 }
             } catch (err) {
-                document.getElementById('progress').innerText = 'Error: Ensure Excel files are uploaded.';
+                document.getElementById('progress').innerText = 'Error: Ensure all 20 .xlsx files are uploaded to GitHub.';
             }
         }
 
@@ -414,9 +416,13 @@ Here is the ultimate, compact, fully dynamic app code.
             const frontEl = document.getElementById('card-front');
             const backEl = document.getElementById('card-back');
 
-            // Handle Single-Card Read Mode vs Quiz Flip Mode within the SAME non-scrolling UI box
             if (isReadMode) {
-                frontEl.innerHTML = `<div style="color:var(--btn-primary); margin-bottom:15px; padding-bottom:10px; border-bottom:1px solid var(--glass-border);">${data.front}</div><div style="font-weight:600;">${data.back}</div>`;
+                let html = `<div style="color:var(--btn-primary); margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid rgba(100,116,139,0.25); width:100%;">${data.front}</div>`;
+                html += `<div style="font-weight:600; font-size:15px; width:100%; white-space:pre-line;">${data.back}</div>`;
+                if (data.hint) {
+                    html += `<div style="margin-top:10px; font-size:12px; font-style:italic; color:#d97706;">💡 ${data.hint}</div>`;
+                }
+                frontEl.innerHTML = html;
                 frontEl.style.justifyContent = 'flex-start';
                 backEl.innerHTML = "";
                 document.getElementById('hint-text').style.display = 'none';
@@ -432,18 +438,56 @@ Here is the ultimate, compact, fully dynamic app code.
             
             localStorage.setItem(`cfa_progress_${currentFilename}`, currentIndex);
             document.getElementById('progress-bar-fill').style.width = `${((currentIndex + 1) / currentDeck.length) * 100}%`;
-            document.getElementById('progress').innerText = `Card ${currentIndex + 1} / ${currentDeck.length}`;
+            document.getElementById('progress').innerText = `Card ${currentIndex + 1} of ${currentDeck.length}`;
             
             document.getElementById('btn-prev').disabled = currentIndex === 0;
-            if (currentIndex === currentDeck.length - 1) { document.getElementById('btn-next').disabled = true; confetti(); } 
-            else { document.getElementById('btn-next').disabled = false; }
+            if (currentIndex === currentDeck.length - 1) {
+                document.getElementById('btn-next').disabled = true;
+                confetti({ particleCount: 140, spread: 75, origin: { y: 0.6 } });
+            } else {
+                document.getElementById('btn-next').disabled = false;
+            }
         }
 
         function flipCard() { if (!isReadMode) document.getElementById('card').classList.toggle('is-flipped'); }
         function nextCard() { if (currentIndex < currentDeck.length - 1) { currentIndex++; updateCard(); } }
         function prevCard() { if (currentIndex > 0) { currentIndex--; updateCard(); } }
 
-        // Touch Swipe Support for Flashcards
+        function resetProgress() {
+            if (confirm("Start this deck from Card 1?")) {
+                currentIndex = 0;
+                updateCard();
+            }
+        }
+
+        function shuffleDeck() {
+            for (let i = currentDeck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [currentDeck[i], currentDeck[j]] = [currentDeck[j], currentDeck[i]];
+            }
+            currentIndex = 0;
+            updateCard();
+        }
+
+        function saveAsImage() {
+            const cardEl = document.getElementById('card');
+            const originalTransform = cardEl.style.transform;
+            if (cardEl.classList.contains('is-flipped')) {
+                cardEl.style.transform = "rotateY(0deg)";
+                document.getElementById('card-back').style.transform = "rotateY(0deg)";
+                document.getElementById('card-front').style.display = "none";
+            }
+            html2canvas(cardEl, { backgroundColor: null, scale: 2 }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `CFA_Flashcard_${currentIndex + 1}.png`;
+                link.href = canvas.toDataURL("image/png");
+                link.click();
+                cardEl.style.transform = originalTransform;
+                document.getElementById('card-back').style.transform = "rotateY(180deg)";
+                document.getElementById('card-front').style.display = "flex";
+            });
+        }
+
         let tsX = 0, teX = 0;
         const slider = document.getElementById('card-container');
         slider.addEventListener('touchstart', e => tsX = e.changedTouches[0].screenX);
@@ -453,8 +497,18 @@ Here is the ultimate, compact, fully dynamic app code.
             if (teX > tsX + 40) prevCard(); 
         });
 
+        document.addEventListener('keydown', e => {
+            if (currentDeck.length === 0) return;
+            if (e.key === 'ArrowRight') nextCard();
+            else if (e.key === 'ArrowLeft') prevCard();
+            else if (e.key === ' ' && !isReadMode) { e.preventDefault(); flipCard(); }
+        });
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch(() => {});
+            });
+        }
     </script>
 </body>
 </html>
-
-```
