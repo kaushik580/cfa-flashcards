@@ -4,61 +4,130 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>CFA Master Flashcards</title>
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#0084ff">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📈</text></svg>">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📈</text></svg>">
     
+    <!-- PWA Manifest & Icons -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1a202c">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📈</text></svg>">
+
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 
     <style>
-        :root { --bg-color: #f0f2f5; --text-color: #1c1e21; --card-bg: #ffffff; --card-back-bg: linear-gradient(135deg, #002060, #004080); --card-border: #e4e6eb; --btn-primary: #0084ff; }
-        body.dark-mode { --bg-color: #18191a; --text-color: #e4e6eb; --card-bg: #242526; --card-back-bg: linear-gradient(135deg, #0a1930, #112240); --card-border: #3a3b3c; --btn-primary: #2d88ff; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+
+        :root { 
+            --bg-color: #f7fafc; 
+            --text-color: #2d3748; 
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.5);
+            --card-bg: #ffffff; 
+            --card-back-bg: linear-gradient(135deg, #2b6cb0, #1a365d); 
+            --btn-primary: #3182ce; 
+        }
         
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg-color); color: var(--text-color); display: flex; flex-direction: column; align-items: center; padding: 15px; margin: 0; transition: background-color 0.3s, color 0.3s; overflow-x: hidden; }
+        body.dark-mode { 
+            --bg-color: #1a202c; 
+            --text-color: #e2e8f0; 
+            --glass-bg: rgba(45, 55, 72, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --card-bg: #2d3748; 
+            --card-back-bg: linear-gradient(135deg, #1a365d, #0d1a30); 
+            --btn-primary: #4299e1; 
+        }
         
-        .top-bar { width: 100%; max-width: 450px; display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-bottom: 15px; }
-        .action-btn { padding: 8px 12px; font-size: 14px; background: #6c757d; color: white; border: none; border-radius: 20px; cursor: pointer; font-weight: 600; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-color); display: flex; flex-direction: column; align-items: center; padding: 15px; margin: 0; transition: all 0.3s; overflow-x: hidden; }
+        
+        /* Glassmorphism Header */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 20px;
+            width: 100%;
+            max-width: 450px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+            box-sizing: border-box;
+        }
+
+        .dashboard-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #718096;
+        }
+        .stat-box { text-align: center; }
+        .stat-val { font-size: 18px; font-weight: 800; color: var(--btn-primary); }
+
+        .top-bar { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-bottom: 15px; }
+        .action-btn { padding: 8px 12px; font-size: 13px; background: #718096; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: transform 0.1s; }
         .action-btn:active { transform: scale(0.95); }
         
-        .header { text-align: center; width: 100%; max-width: 450px; }
-        h2 { margin: 5px 0 15px 0; font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+        h2 { margin: 0 0 15px 0; font-size: 24px; font-weight: 800; text-align: center; }
         
-        select { width: 100%; padding: 14px; font-size: 16px; border-radius: 12px; border: 1px solid var(--card-border); background-color: var(--card-bg); color: var(--text-color); margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); font-weight: 600; appearance: none; outline: none; }
+        select { width: 100%; padding: 14px; font-size: 16px; border-radius: 12px; border: 1px solid var(--glass-border); background-color: var(--card-bg); color: var(--text-color); margin-bottom: 15px; font-weight: 600; outline: none; }
         
-        .progress-container { width: 100%; background-color: #ddd; border-radius: 10px; height: 10px; margin-bottom: 8px; overflow: hidden; }
-        .progress-bar-fill { height: 100%; background-color: #28a745; width: 0%; transition: width 0.4s ease; }
-        .progress-text { font-size: 13px; margin-bottom: 15px; font-weight: 600; color: #888; }
+        .progress-container { width: 100%; background-color: rgba(0,0,0,0.1); border-radius: 10px; height: 8px; margin-bottom: 8px; overflow: hidden; }
+        .progress-bar-fill { height: 100%; background-color: #48bb78; width: 0%; transition: width 0.4s ease; }
+        .progress-text { font-size: 13px; font-weight: 600; text-align: center; }
 
+        /* Card CSS */
         .card-container { perspective: 1500px; width: 100%; max-width: 450px; height: 350px; margin-bottom: 25px; cursor: pointer; display: none; }
-        .card { width: 100%; height: 100%; position: relative; transition: transform 0.7s cubic-bezier(0.4, 0.2, 0.2, 1); transform-style: preserve-3d; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); }
+        .card { width: 100%; height: 100%; position: relative; transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); transform-style: preserve-3d; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
         .card.is-flipped { transform: rotateY(180deg); }
         
-        .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 30px; box-sizing: border-box; border-radius: 20px; text-align: center; font-size: 20px; line-height: 1.5; font-weight: 600; overflow-y: auto; }
-        .card-front { background: var(--card-bg); border: 2px solid var(--card-border); }
-        .card-back { transform: rotateY(180deg); background: var(--card-back-bg); color: white; border: none; font-size: 18px; font-weight: 500; }
+        .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 25px; box-sizing: border-box; border-radius: 20px; text-align: center; font-size: 18px; line-height: 1.5; font-weight: 600; overflow-y: auto; }
+        .card-front { background: var(--card-bg); border: 1px solid var(--glass-border); }
+        .card-back { transform: rotateY(180deg); background: var(--card-back-bg); color: white; }
         
-        .controls { display: none; width: 100%; max-width: 450px; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .nav-btn { padding: 15px 25px; font-size: 18px; border: none; border-radius: 30px; background-color: var(--btn-primary); color: white; cursor: pointer; transition: background 0.2s, transform 0.1s; font-weight: bold; width: 45%; box-shadow: 0 4px 10px rgba(0,132,255,0.3); }
+        .controls { display: none; width: 100%; max-width: 450px; justify-content: space-between; margin-bottom: 20px; }
+        .nav-btn { padding: 15px 25px; font-size: 16px; border: none; border-radius: 12px; background-color: var(--btn-primary); color: white; cursor: pointer; font-weight: 800; width: 48%; box-shadow: 0 4px 6px rgba(49, 130, 206, 0.3); }
         .nav-btn:active { transform: scale(0.95); }
-        .nav-btn:disabled { background-color: #a0c3e8; cursor: not-allowed; box-shadow: none; }
+        .nav-btn:disabled { background-color: #a0aec0; box-shadow: none; cursor: not-allowed; }
         
-        .utilities { display: none; width: 100%; max-width: 450px; justify-content: space-around; align-items: center; margin-bottom: 30px; }
-        .hint-text { margin-top: 15px; font-style: italic; color: #e67e22; display: none; font-size: 15px; padding: 12px; border-radius: 10px; background: rgba(230, 126, 34, 0.1); width: 100%; max-width: 450px; text-align: center; font-weight: 600; }
+        .utilities { display: none; width: 100%; max-width: 450px; justify-content: center; gap: 10px; margin-bottom: 20px; }
+        .hint-text { margin-top: 15px; font-style: italic; color: #dd6b20; display: none; font-size: 14px; padding: 12px; border-radius: 8px; background: rgba(221, 107, 32, 0.1); width: 100%; max-width: 450px; text-align: center; font-weight: 600; }
+
+        /* Read Mode */
+        .list-container { display: none; width: 100%; max-width: 450px; margin-bottom: 30px; }
+        .list-item { background: var(--card-bg); border-radius: 16px; padding: 20px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: left; border: 1px solid var(--glass-border); }
+        .list-front { font-weight: 800; font-size: 18px; margin-bottom: 10px; color: var(--btn-primary); border-bottom: 1px solid var(--glass-border); padding-bottom: 8px; }
+        
+        /* News Feed Section */
+        .news-section { display: none; width: 100%; max-width: 450px; margin-top: 20px; }
+        .news-item { padding: 15px; background: var(--card-bg); border-radius: 12px; margin-bottom: 10px; border: 1px solid var(--glass-border); text-align: left; }
+        .news-item a { color: var(--btn-primary); text-decoration: none; font-weight: 600; font-size: 14px; }
+        .news-item p { font-size: 12px; color: #718096; margin: 5px 0 0 0; }
     </style>
 </head>
 <body>
 
-    <div class="top-bar">
-        <button class="action-btn" onclick="toggleDarkMode()" id="dark-mode-btn">🌙 Dark</button>
-        <button class="action-btn" onclick="toggleViewMode()" id="view-btn" style="display:none; background:#2c3e50;">📖 Read Mode</button>
-        <button class="action-btn" onclick="shuffleDeck()" id="shuffle-btn" style="display:none; background:#8e44ad;">🔀 Shuffle</button>
-        <button class="action-btn" onclick="resetProgress()" id="reset-btn" style="display:none; background:#e74c3c;">🔄 Reset</button>
-    </div>
+    <div class="glass-panel">
+        <div class="dashboard-stats">
+            <div class="stat-box">
+                <div>Exam Countdown</div>
+                <div class="stat-val" id="countdown">-- Days</div>
+            </div>
+            <div class="stat-box">
+                <div>Study Time</div>
+                <div class="stat-val" id="study-time">0h 0m</div>
+            </div>
+        </div>
 
-    <div class="header">
+        <div class="top-bar">
+            <button class="action-btn" onclick="toggleDarkMode()" id="dark-mode-btn">🌙 Dark</button>
+            <button class="action-btn" onclick="toggleViewMode()" id="view-btn" style="background:#4a5568;">📖 Read Mode</button>
+            <button class="action-btn" onclick="shuffleDeck()" id="shuffle-btn" style="display:none; background:#805ad5;">🔀 Shuffle</button>
+            <button class="action-btn" onclick="resetProgress()" id="reset-btn" style="display:none; background:#e53e3e;">🔄 Reset</button>
+        </div>
+
         <h2>CFA Master Flashcards</h2>
         <select id="subject-select" onchange="loadSelectedDeck()">
             <option value="">-- Choose a Subject to Study --</option>
@@ -87,17 +156,21 @@
         <div class="progress-container" id="progress-container" style="display:none;">
             <div class="progress-bar-fill" id="progress-bar-fill"></div>
         </div>
-        <div class="progress-text" id="progress"></div>
+        <div class="progress-text" id="progress">Select a deck or read the latest news below!</div>
     </div>
 
+    <!-- 3D Card View Mode -->
     <div id="capture-area" style="width: 100%; max-width: 450px; display: flex; justify-content: center;">
         <div class="card-container" id="card-container" onclick="flipCard()">
             <div class="card" id="card">
-                <div class="card-face card-front" id="card-front" style="justify-content: flex-start; padding-top: 40px;">Front</div>
+                <div class="card-face card-front" id="card-front">Front</div>
                 <div class="card-face card-back" id="card-back">Back</div>
             </div>
         </div>
     </div>
+
+    <!-- List View Mode -->
+    <div class="list-container" id="list-container"></div>
 
     <div class="controls" id="controls">
         <button class="nav-btn" onclick="prevCard()" id="btn-prev">⬅️ Prev</button>
@@ -105,24 +178,85 @@
     </div>
 
     <div class="utilities" id="utilities">
-        <button class="action-btn" onclick="toggleHint()" id="btn-hint" style="background-color: #f39c12; font-size: 16px; padding: 10px 20px;">💡 Show Hint</button>
-        <button class="action-btn" onclick="saveAsImage()" style="background-color: #27ae60; font-size: 16px; padding: 10px 20px;">📸 Save Image</button>
+        <button class="action-btn" onclick="toggleHint()" id="btn-hint" style="background-color: #dd6b20;">💡 Hint</button>
+        <button class="action-btn" onclick="saveAsImage()" style="background-color: #38a169;">📸 Save Image</button>
     </div>
-    
     <div class="hint-text" id="hint-text"></div>
+
+    <!-- Live Finance/CFA News Feed -->
+    <div class="glass-panel news-section" id="news-section">
+        <h3 style="margin-top:0; text-align:center;">Live Study Resources & News</h3>
+        <div id="news-feed">Loading latest updates...</div>
+    </div>
 
     <script>
         let currentDeck = [];
         let currentIndex = 0;
         let currentFilename = "";
-        let isReadMode = false; // Tracks if we are in Read Mode (all on front) or Quiz Mode (flip)
+        let isReadMode = false; 
 
-        // Initialization & Dark Mode
+        // --- 1. Dashboard: Exam Countdown Timer ---
+        // Change this date to her actual exam date! Format: YYYY-MM-DD
+        const EXAM_DATE = new Date("2027-05-15").getTime();
+        
+        function updateCountdown() {
+            const now = new Date().getTime();
+            const distance = EXAM_DATE - now;
+            const days = Math.ceil(distance / (1000 * 60 * 60 * 24));
+            document.getElementById("countdown").innerText = days > 0 ? `${days} Days` : "Exam Day!";
+        }
+        updateCountdown();
+
+        // --- 2. Dashboard: Study Time Tracker ---
+        let studySeconds = parseInt(localStorage.getItem('cfa_study_time')) || 0;
+        let isStudying = false;
+
+        function updateStudyTimeUI() {
+            const hours = Math.floor(studySeconds / 3600);
+            const minutes = Math.floor((studySeconds % 3600) / 60);
+            document.getElementById("study-time").innerText = `${hours}h ${minutes}m`;
+        }
+        updateStudyTimeUI();
+
+        setInterval(() => {
+            if (isStudying) {
+                studySeconds++;
+                localStorage.setItem('cfa_study_time', studySeconds);
+                if (studySeconds % 60 === 0) updateStudyTimeUI(); // Update UI every minute
+            }
+        }, 1000);
+
+        // --- 3. Live News Feed (RSS to JSON) ---
+        // Pulling from a public finance/education RSS feed (e.g., Investopedia or CFA Institute blogs)
+        async function loadNews() {
+            const rssUrl = encodeURIComponent('https://www.investopedia.com/markets-news-4427704'); // Example finance feed
+            const apiEndpoint = `https://api.rss2json.com/v1/api.json?rss_url=https://seekingalpha.com/market_currents.xml`; 
+            
+            try {
+                const response = await fetch(apiEndpoint);
+                const data = await response.json();
+                
+                let html = "";
+                data.items.slice(0, 3).forEach(item => {
+                    html += `
+                    <div class="news-item">
+                        <a href="${item.link}" target="_blank">${item.title}</a>
+                        <p>${new Date(item.pubDate).toLocaleDateString()}</p>
+                    </div>`;
+                });
+                document.getElementById('news-feed').innerHTML = html;
+                document.getElementById('news-section').style.display = 'block';
+            } catch (err) {
+                document.getElementById('news-feed').innerHTML = "<p>Could not load live news. Check connection.</p>";
+            }
+        }
+        loadNews();
+
+        // --- 4. Dark Mode ---
         if(localStorage.getItem('cfaDarkMode') === 'true') {
             document.body.classList.add('dark-mode');
             document.getElementById('dark-mode-btn').innerText = '☀️ Light';
         }
-
         function toggleDarkMode() {
             document.body.classList.toggle('dark-mode');
             const isDark = document.body.classList.contains('dark-mode');
@@ -130,34 +264,68 @@
             document.getElementById('dark-mode-btn').innerText = isDark ? '☀️ Light' : '🌙 Dark';
         }
 
+        // --- 5. Deck Logic ---
         function toggleViewMode() {
             isReadMode = !isReadMode;
             const viewBtn = document.getElementById('view-btn');
             
             if (isReadMode) {
-                viewBtn.innerHTML = '🃏 Quiz Mode';
-                viewBtn.style.background = '#007bff';
+                viewBtn.innerHTML = '🃏 Card Mode';
+                viewBtn.style.background = '#4299e1';
+                document.getElementById('capture-area').style.display = 'none';
+                document.getElementById('controls').style.display = 'none';
+                document.getElementById('utilities').style.display = 'none';
+                document.getElementById('hint-text').style.display = 'none';
+                document.getElementById('list-container').style.display = 'block';
+                if(currentDeck.length > 0) renderListView();
             } else {
                 viewBtn.innerHTML = '📖 Read Mode';
-                viewBtn.style.background = '#2c3e50';
+                viewBtn.style.background = '#4a5568';
+                document.getElementById('list-container').style.display = 'none';
+                if(currentDeck.length > 0) {
+                    document.getElementById('capture-area').style.display = 'flex';
+                    document.getElementById('controls').style.display = 'flex';
+                    document.getElementById('utilities').style.display = 'flex';
+                }
             }
-            updateCard();
+        }
+
+        function renderListView() {
+            const container = document.getElementById('list-container');
+            container.innerHTML = '';
+            currentDeck.forEach((card, idx) => {
+                let html = `<div class="list-item">
+                    <div class="list-front">${idx + 1}. ${card.front}</div>
+                    <div style="font-size: 15px; margin-bottom: 12px; line-height: 1.5;">${card.back}</div>`;
+                if(card.hint) {
+                    html += `<div style="font-style: italic; font-size: 13px; color: #dd6b20; background: rgba(221, 107, 32, 0.1); padding: 10px; border-radius: 8px;">💡 ${card.hint}</div>`;
+                }
+                html += `</div>`;
+                container.innerHTML += html;
+            });
         }
 
         async function loadSelectedDeck() {
             currentFilename = document.getElementById('subject-select').value;
-            if (!currentFilename) return;
+            if (!currentFilename) {
+                isStudying = false;
+                document.getElementById('news-section').style.display = 'block';
+                return;
+            }
 
-            // Hide UI while loading
+            isStudying = true; // Start the study timer!
+            document.getElementById('news-section').style.display = 'none'; // Hide news while studying
+            
+            if(isReadMode) toggleViewMode();
+
             document.getElementById('card-container').style.display = 'none';
             document.getElementById('controls').style.display = 'none';
             document.getElementById('utilities').style.display = 'none';
             document.getElementById('hint-text').style.display = 'none';
             document.getElementById('shuffle-btn').style.display = 'none';
             document.getElementById('reset-btn').style.display = 'none';
-            document.getElementById('view-btn').style.display = 'none';
             document.getElementById('progress-container').style.display = 'none';
-            document.getElementById('progress').innerText = 'Downloading deck from GitHub...';
+            document.getElementById('progress').innerText = 'Downloading deck...';
 
             try {
                 const response = await fetch(currentFilename);
@@ -182,59 +350,33 @@
                     document.getElementById('utilities').style.display = 'flex';
                     document.getElementById('shuffle-btn').style.display = 'block';
                     document.getElementById('reset-btn').style.display = 'block';
-                    document.getElementById('view-btn').style.display = 'block';
                     document.getElementById('progress-container').style.display = 'block';
                     updateCard();
                 }
             } catch (error) {
-                document.getElementById('progress').innerText = 'Error: Excel file not found. Ensure it is uploaded to GitHub.';
+                document.getElementById('progress').innerText = 'Error: File not found.';
+                isStudying = false;
             }
         }
 
         function updateCard() {
-            // Always ensure the card is facing forward when updating
             document.getElementById('card').classList.remove('is-flipped');
-            
             const cardData = currentDeck[currentIndex];
-            const frontEl = document.getElementById('card-front');
-            const backEl = document.getElementById('card-back');
-            const hintBtn = document.getElementById('btn-hint');
-            const hintTextEl = document.getElementById('hint-text');
-
-            if (isReadMode) {
-                // Read Mode: Everything on the front of the card
-                let readHTML = `<div style="font-weight: 800; font-size: 20px; color: var(--btn-primary); margin-bottom: 15px; width: 100%; border-bottom: 2px solid var(--card-border); padding-bottom: 10px;">${cardData.front}</div>`;
-                readHTML += `<div style="font-size: 18px; margin-bottom: 20px; width: 100%; font-weight: 500;">${cardData.back}</div>`;
-                if (cardData.hint) {
-                    readHTML += `<div style="font-size: 14px; font-style: italic; color: #e67e22; background: rgba(230, 126, 34, 0.1); padding: 12px; border-radius: 8px; width: 100%; font-weight: 600;">💡 ${cardData.hint}</div>`;
-                }
-                
-                frontEl.innerHTML = readHTML;
-                frontEl.style.justifyContent = 'flex-start'; // Align to top for read mode
-                backEl.innerHTML = ""; // Clear back
-                
-                hintBtn.style.display = 'none'; // Hide external hint button
-                hintTextEl.style.display = 'none';
-            } else {
-                // Quiz Mode: Standard Front / Back flip
-                frontEl.innerText = cardData.front;
-                frontEl.style.justifyContent = 'center'; // Center standard flashcard
-                backEl.innerText = cardData.back;
-                
-                hintTextEl.innerText = cardData.hint;
-                hintTextEl.style.display = 'none';
-                hintBtn.style.display = cardData.hint ? 'block' : 'none'; // Show external hint button
-            }
             
-            // Save Progress
+            document.getElementById('card-front').innerText = cardData.front;
+            document.getElementById('card-back').innerText = cardData.back;
+            
+            const hintText = cardData.hint;
+            document.getElementById('hint-text').innerText = hintText;
+            document.getElementById('hint-text').style.display = 'none';
+            document.getElementById('btn-hint').style.display = hintText ? 'block' : 'none';
+            
             localStorage.setItem(`cfa_progress_${currentFilename}`, currentIndex);
             
-            // Update Progress Bar
             const percent = ((currentIndex + 1) / currentDeck.length) * 100;
             document.getElementById('progress-bar-fill').style.width = percent + '%';
             document.getElementById('progress').innerText = `Card ${currentIndex + 1} of ${currentDeck.length}`;
             
-            // Button states
             document.getElementById('btn-prev').disabled = currentIndex === 0;
             if (currentIndex === currentDeck.length - 1) {
                 document.getElementById('btn-next').disabled = true;
@@ -244,12 +386,7 @@
             }
         }
 
-        function flipCard() { 
-            // Don't flip the card if we are in Read Mode (all info is already on front)
-            if (isReadMode) return; 
-            document.getElementById('card').classList.toggle('is-flipped'); 
-        }
-
+        function flipCard() { if(!isReadMode) document.getElementById('card').classList.toggle('is-flipped'); }
         function toggleHint() { 
             const hint = document.getElementById('hint-text');
             hint.style.display = hint.style.display === 'none' ? 'block' : 'none';
@@ -271,40 +408,37 @@
             }
             currentIndex = 0;
             updateCard();
-            alert("Deck Shuffled! (Progress tracking disabled for this session)");
         }
 
         function triggerConfetti() {
-            confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors: ['#28a745', '#007bff', '#ffc107', '#dc3545'] });
+            confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
         }
 
         function saveAsImage() {
             const cardEl = document.getElementById('card');
             const originalTransform = cardEl.style.transform;
-            
             if (cardEl.classList.contains('is-flipped')) {
                 cardEl.style.transform = "rotateY(0deg)";
                 document.getElementById('card-back').style.transform = "rotateY(0deg)";
                 document.getElementById('card-front').style.display = "none";
             }
-            
             html2canvas(cardEl, { backgroundColor: null, scale: 2 }).then(canvas => {
                 const link = document.createElement('a');
                 link.download = `CFA_Flashcard_${currentIndex+1}.png`;
                 link.href = canvas.toDataURL("image/png");
                 link.click();
-                
                 cardEl.style.transform = originalTransform;
                 document.getElementById('card-back').style.transform = "rotateY(180deg)";
                 document.getElementById('card-front').style.display = "flex";
             });
         }
 
+        // Keyboard & Swipe Support
         document.addEventListener('keydown', (e) => {
-            if(currentDeck.length === 0) return;
+            if(currentDeck.length === 0 || isReadMode) return;
             if (e.key === 'ArrowRight') nextCard();
             else if (e.key === 'ArrowLeft') prevCard();
-            else if (e.key === ' ' && !isReadMode) { e.preventDefault(); flipCard(); }
+            else if (e.key === ' ') { e.preventDefault(); flipCard(); }
         });
 
         let touchstartX = 0, touchendX = 0;
@@ -312,18 +446,14 @@
         slider.addEventListener('touchstart', e => { touchstartX = e.changedTouches[0].screenX; });
         slider.addEventListener('touchend', e => { 
             touchendX = e.changedTouches[0].screenX; 
-            if (touchendX < touchstartX - 40) nextCard(); 
-            if (touchendX > touchstartX + 40) prevCard(); 
+            if (touchendX < touchstartX - 40 && !isReadMode) nextCard(); 
+            if (touchendX > touchstartX + 40 && !isReadMode) prevCard(); 
         });
-    </script>
-    <script>
+
+        // Register Service Worker for Offline PWA support
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js').then(reg => {
-                    console.log('ServiceWorker registered!', reg.scope);
-                }).catch(err => {
-                    console.log('ServiceWorker failed: ', err);
-                });
+                navigator.serviceWorker.register('sw.js').catch(err => console.log('SW failed:', err));
             });
         }
     </script>
