@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CFA Master Flashcards</title>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f4f9; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
+        .header { text-align: center; margin-bottom: 20px; width: 100%; max-width: 400px; }
+        select { width: 100%; padding: 10px; font-size: 16px; border-radius: 8px; border: 1px solid #ccc; margin-bottom: 20px; }
+        .card-container { perspective: 1000px; width: 100%; max-width: 400px; height: 250px; margin-bottom: 20px; cursor: pointer; display: none; }
+        .card { width: 100%; height: 100%; position: relative; transition: transform 0.6s; transform-style: preserve-3d; border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .card.is-flipped { transform: rotateY(180deg); }
+        .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; border-radius: 12px; text-align: center; background: white; }
+        .card-back { transform: rotateY(180deg); background: #002060; color: white; }
+        .controls { display: none; width: 100%; max-width: 400px; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        button { padding: 10px 20px; font-size: 16px; border: none; border-radius: 8px; background-color: #007bff; color: white; cursor: pointer; }
+        button:disabled { background-color: #ccc; }
+        .hint-container { width: 100%; max-width: 400px; text-align: center; display: none; }
+        .hint-text { margin-top: 10px; font-style: italic; color: #555; display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2>CFA Level 1 Flashcards</h2>
+        <select id="subject-select" onchange="loadSelectedDeck()">
+            <option value="">-- Select a Subject to Study --</option>
+            <option value="CFA_Ethics_Part1_Flashcards.xlsx">Ethics (Part 1)</option>
+            <option value="CFA_Ethics_Part2_Flashcards.xlsx">Ethics (Part 2)</option>
+            <option value="CFA_Quant_Part1_Flashcards.xlsx">Quantitative Methods (Part 1)</option>
+            <option value="CFA_Quant_Part2_Flashcards.xlsx">Quantitative Methods (Part 2)</option>
+            <option value="CFA_Economics_Part1_Flashcards.xlsx">Economics (Part 1)</option>
+            <option value="CFA_Economics_Part2_Flashcards.xlsx">Economics (Part 2)</option>
+            <option value="CFA_FSA_Part1_Flashcards.xlsx">Financial Statement Analysis (Part 1)</option>
+            <option value="CFA_FSA_Part2_Flashcards.xlsx">Financial Statement Analysis (Part 2)</option>
+            <option value="CFA_Corporate_Part1_Flashcards.xlsx">Corporate Issuers (Part 1)</option>
+            <option value="CFA_Corporate_Part2_Flashcards.xlsx">Corporate Issuers (Part 2)</option>
+            <option value="CFA_Equities_Part1_Flashcards.xlsx">Equities (Part 1)</option>
+            <option value="CFA_Equities_Part2_Flashcards.xlsx">Equities (Part 2)</option>
+            <option value="CFA_FixedIncome_Part1_Flashcards.xlsx">Fixed Income (Part 1)</option>
+            <option value="CFA_FixedIncome_Part2_Flashcards.xlsx">Fixed Income (Part 2)</option>
+            <option value="CFA_Derivatives_Part1_Flashcards.xlsx">Derivatives (Part 1)</option>
+            <option value="CFA_Derivatives_Part2_Flashcards.xlsx">Derivatives (Part 2)</option>
+            <option value="CFA_Alts_Part1_Flashcards.xlsx">Alternative Investments (Part 1)</option>
+            <option value="CFA_Alts_Part2_Flashcards.xlsx">Alternative Investments (Part 2)</option>
+            <option value="CFA_Portfolio_Part1_Flashcards.xlsx">Portfolio Construction (Part 1)</option>
+            <option value="CFA_Portfolio_Part2_Flashcards.xlsx">Portfolio Construction (Part 2)</option>
+        </select>
+        <div id="progress"></div>
+    </div>
+
+    <div class="card-container" id="card-container" onclick="flipCard()">
+        <div class="card" id="card">
+            <div class="card-face card-front" id="card-front">Front</div>
+            <div class="card-face card-back" id="card-back">Back</div>
+        </div>
+    </div>
+
+    <div class="controls" id="controls">
+        <button onclick="prevCard()" id="btn-prev">Previous</button>
+        <button onclick="nextCard()" id="btn-next">Next</button>
+    </div>
+
+    <div class="hint-container" id="hint-container">
+        <button onclick="toggleHint()" style="background-color: #6c757d;">Show Hint</button>
+        <div class="hint-text" id="hint-text"></div>
+    </div>
+
+    <script>
+        let flashcards = [];
+        let currentIndex = 0;
+
+        async function loadSelectedDeck() {
+            const filename = document.getElementById('subject-select').value;
+            if (!filename) return;
+
+            document.getElementById('card-container').style.display = 'none';
+            document.getElementById('controls').style.display = 'none';
+            document.getElementById('hint-container').style.display = 'none';
+            document.getElementById('progress').innerText = 'Loading...';
+
+            try {
+                const response = await fetch(filename);
+                const arrayBuffer = await response.arrayBuffer();
+                const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                const firstSheet = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheet];
+                const data = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                flashcards = data.slice(1).filter(row => row.length >= 3).map(row => ({
+                    front: row[1] || "",
+                    back: row[2] || "",
+                    hint: row[3] || ""
+                }));
+
+                if (flashcards.length > 0) {
+                    currentIndex = 0;
+                    document.getElementById('card-container').style.display = 'block';
+                    document.getElementById('controls').style.display = 'flex';
+                    document.getElementById('hint-container').style.display = 'block';
+                    updateCard();
+                } else {
+                    document.getElementById('progress').innerText = 'Error: No valid flashcards found.';
+                }
+            } catch (error) {
+                document.getElementById('progress').innerText = 'Error loading deck. Ensure the Excel file is uploaded to GitHub.';
+            }
+        }
+
+        function updateCard() {
+            document.getElementById('card').classList.remove('is-flipped');
+            document.getElementById('card-front').innerText = flashcards[currentIndex].front;
+            document.getElementById('card-back').innerText = flashcards[currentIndex].back;
+            document.getElementById('hint-text').innerText = flashcards[currentIndex].hint;
+            document.getElementById('hint-text').style.display = 'none';
+            
+            document.getElementById('progress').innerText = `Card ${currentIndex + 1} of ${flashcards.length}`;
+            document.getElementById('btn-prev').disabled = currentIndex === 0;
+            document.getElementById('btn-next').disabled = currentIndex === flashcards.length - 1;
+        }
+
+        function flipCard() { document.getElementById('card').classList.toggle('is-flipped'); }
+        function toggleHint() { 
+            const hint = document.getElementById('hint-text');
+            hint.style.display = hint.style.display === 'none' ? 'block' : 'none';
+        }
+        function nextCard() { if (currentIndex < flashcards.length - 1) { currentIndex++; updateCard(); } }
+        function prevCard() { if (currentIndex > 0) { currentIndex--; updateCard(); } }
+    </script>
+</body>
+</html>
