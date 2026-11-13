@@ -29,7 +29,7 @@
         .progress-bar-fill { height: 100%; background-color: #28a745; width: 0%; transition: width 0.4s ease; }
         .progress-text { font-size: 13px; margin-bottom: 15px; font-weight: 600; color: #888; }
 
-        .card-container { perspective: 1500px; width: 100%; max-width: 450px; height: 320px; margin-bottom: 25px; cursor: pointer; display: none; }
+        .card-container { perspective: 1500px; width: 100%; max-width: 450px; height: 350px; margin-bottom: 25px; cursor: pointer; display: none; }
         .card { width: 100%; height: 100%; position: relative; transition: transform 0.7s cubic-bezier(0.4, 0.2, 0.2, 1); transform-style: preserve-3d; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); }
         .card.is-flipped { transform: rotateY(180deg); }
         
@@ -44,13 +44,6 @@
         
         .utilities { display: none; width: 100%; max-width: 450px; justify-content: space-around; align-items: center; margin-bottom: 30px; }
         .hint-text { margin-top: 15px; font-style: italic; color: #e67e22; display: none; font-size: 15px; padding: 12px; border-radius: 10px; background: rgba(230, 126, 34, 0.1); width: 100%; max-width: 450px; text-align: center; font-weight: 600; }
-
-        /* Read Mode (List View) CSS */
-        .list-container { display: none; width: 100%; max-width: 500px; margin-bottom: 30px; }
-        .list-item { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 15px; padding: 20px; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); text-align: left; }
-        .list-front { font-weight: 800; font-size: 18px; margin-bottom: 10px; color: var(--btn-primary); border-bottom: 2px solid var(--card-border); padding-bottom: 8px; }
-        .list-back { font-size: 16px; margin-bottom: 12px; line-height: 1.5; font-weight: 500; }
-        .list-hint { font-style: italic; font-size: 14px; color: #e67e22; background: rgba(230, 126, 34, 0.1); padding: 10px; border-radius: 8px; font-weight: 600; }
     </style>
 </head>
 <body>
@@ -94,18 +87,14 @@
         <div class="progress-text" id="progress"></div>
     </div>
 
-    <!-- 3D Card View Mode -->
     <div id="capture-area" style="width: 100%; max-width: 450px; display: flex; justify-content: center;">
         <div class="card-container" id="card-container" onclick="flipCard()">
             <div class="card" id="card">
-                <div class="card-face card-front" id="card-front">Front</div>
+                <div class="card-face card-front" id="card-front" style="justify-content: flex-start; padding-top: 40px;">Front</div>
                 <div class="card-face card-back" id="card-back">Back</div>
             </div>
         </div>
     </div>
-
-    <!-- List View Mode -->
-    <div class="list-container" id="list-container"></div>
 
     <div class="controls" id="controls">
         <button class="nav-btn" onclick="prevCard()" id="btn-prev">⬅️ Prev</button>
@@ -123,7 +112,7 @@
         let currentDeck = [];
         let currentIndex = 0;
         let currentFilename = "";
-        let isListView = false;
+        let isReadMode = false; // Tracks if we are in Read Mode (all on front) or Quiz Mode (flip)
 
         // Initialization & Dark Mode
         if(localStorage.getItem('cfaDarkMode') === 'true') {
@@ -139,49 +128,22 @@
         }
 
         function toggleViewMode() {
-            isListView = !isListView;
+            isReadMode = !isReadMode;
             const viewBtn = document.getElementById('view-btn');
             
-            if (isListView) {
-                viewBtn.innerHTML = '🃏 Card Mode';
+            if (isReadMode) {
+                viewBtn.innerHTML = '🃏 Quiz Mode';
                 viewBtn.style.background = '#007bff';
-                document.getElementById('capture-area').style.display = 'none';
-                document.getElementById('controls').style.display = 'none';
-                document.getElementById('utilities').style.display = 'none';
-                document.getElementById('hint-text').style.display = 'none';
-                document.getElementById('list-container').style.display = 'block';
-                renderListView();
             } else {
                 viewBtn.innerHTML = '📖 Read Mode';
                 viewBtn.style.background = '#2c3e50';
-                document.getElementById('capture-area').style.display = 'flex';
-                document.getElementById('controls').style.display = 'flex';
-                document.getElementById('utilities').style.display = 'flex';
-                document.getElementById('list-container').style.display = 'none';
             }
-        }
-
-        function renderListView() {
-            const container = document.getElementById('list-container');
-            container.innerHTML = '';
-            currentDeck.forEach((card, idx) => {
-                let html = `<div class="list-item">
-                    <div class="list-front">${idx + 1}. ${card.front}</div>
-                    <div class="list-back">${card.back}</div>`;
-                if(card.hint) {
-                    html += `<div class="list-hint">💡 ${card.hint}</div>`;
-                }
-                html += `</div>`;
-                container.innerHTML += html;
-            });
+            updateCard();
         }
 
         async function loadSelectedDeck() {
             currentFilename = document.getElementById('subject-select').value;
             if (!currentFilename) return;
-
-            // Reset view to cards when loading new deck
-            if(isListView) toggleViewMode();
 
             // Hide UI while loading
             document.getElementById('card-container').style.display = 'none';
@@ -227,23 +189,50 @@
         }
 
         function updateCard() {
+            // Always ensure the card is facing forward when updating
             document.getElementById('card').classList.remove('is-flipped');
-            document.getElementById('card-front').innerText = currentDeck[currentIndex].front;
-            document.getElementById('card-back').innerText = currentDeck[currentIndex].back;
             
-            const hintText = currentDeck[currentIndex].hint;
-            document.getElementById('hint-text').innerText = hintText;
-            document.getElementById('hint-text').style.display = 'none';
-            document.getElementById('btn-hint').style.display = hintText ? 'block' : 'none';
+            const cardData = currentDeck[currentIndex];
+            const frontEl = document.getElementById('card-front');
+            const backEl = document.getElementById('card-back');
+            const hintBtn = document.getElementById('btn-hint');
+            const hintTextEl = document.getElementById('hint-text');
+
+            if (isReadMode) {
+                // Read Mode: Everything on the front of the card
+                let readHTML = `<div style="font-weight: 800; font-size: 20px; color: var(--btn-primary); margin-bottom: 15px; width: 100%; border-bottom: 2px solid var(--card-border); padding-bottom: 10px;">${cardData.front}</div>`;
+                readHTML += `<div style="font-size: 18px; margin-bottom: 20px; width: 100%; font-weight: 500;">${cardData.back}</div>`;
+                if (cardData.hint) {
+                    readHTML += `<div style="font-size: 14px; font-style: italic; color: #e67e22; background: rgba(230, 126, 34, 0.1); padding: 12px; border-radius: 8px; width: 100%; font-weight: 600;">💡 ${cardData.hint}</div>`;
+                }
+                
+                frontEl.innerHTML = readHTML;
+                frontEl.style.justifyContent = 'flex-start'; // Align to top for read mode
+                backEl.innerHTML = ""; // Clear back
+                
+                hintBtn.style.display = 'none'; // Hide external hint button
+                hintTextEl.style.display = 'none';
+            } else {
+                // Quiz Mode: Standard Front / Back flip
+                frontEl.innerText = cardData.front;
+                frontEl.style.justifyContent = 'center'; // Center standard flashcard
+                backEl.innerText = cardData.back;
+                
+                hintTextEl.innerText = cardData.hint;
+                hintTextEl.style.display = 'none';
+                hintBtn.style.display = cardData.hint ? 'block' : 'none'; // Show external hint button
+            }
             
+            // Save Progress
             localStorage.setItem(`cfa_progress_${currentFilename}`, currentIndex);
             
+            // Update Progress Bar
             const percent = ((currentIndex + 1) / currentDeck.length) * 100;
             document.getElementById('progress-bar-fill').style.width = percent + '%';
             document.getElementById('progress').innerText = `Card ${currentIndex + 1} of ${currentDeck.length}`;
             
+            // Button states
             document.getElementById('btn-prev').disabled = currentIndex === 0;
-            
             if (currentIndex === currentDeck.length - 1) {
                 document.getElementById('btn-next').disabled = true;
                 triggerConfetti();
@@ -252,7 +241,12 @@
             }
         }
 
-        function flipCard() { document.getElementById('card').classList.toggle('is-flipped'); }
+        function flipCard() { 
+            // Don't flip the card if we are in Read Mode (all info is already on front)
+            if (isReadMode) return; 
+            document.getElementById('card').classList.toggle('is-flipped'); 
+        }
+
         function toggleHint() { 
             const hint = document.getElementById('hint-text');
             hint.style.display = hint.style.display === 'none' ? 'block' : 'none';
@@ -304,10 +298,10 @@
         }
 
         document.addEventListener('keydown', (e) => {
-            if(currentDeck.length === 0 || isListView) return;
+            if(currentDeck.length === 0) return;
             if (e.key === 'ArrowRight') nextCard();
             else if (e.key === 'ArrowLeft') prevCard();
-            else if (e.key === ' ') { e.preventDefault(); flipCard(); }
+            else if (e.key === ' ' && !isReadMode) { e.preventDefault(); flipCard(); }
         });
 
         let touchstartX = 0, touchendX = 0;
@@ -315,8 +309,8 @@
         slider.addEventListener('touchstart', e => { touchstartX = e.changedTouches[0].screenX; });
         slider.addEventListener('touchend', e => { 
             touchendX = e.changedTouches[0].screenX; 
-            if (touchendX < touchstartX - 40 && !isListView) nextCard(); 
-            if (touchendX > touchstartX + 40 && !isListView) prevCard(); 
+            if (touchendX < touchstartX - 40) nextCard(); 
+            if (touchendX > touchstartX + 40) prevCard(); 
         });
     </script>
 </body>
