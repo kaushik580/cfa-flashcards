@@ -422,5 +422,72 @@
         
         if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
     </script>
+    <script>
+        // Handle Shortcuts (?deck=...), Share Target, Note Taking, and Protocol Handlers
+        window.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+
+            // 1. App Shortcut (?deck=CFA_Mock_Exam_1.xlsx)
+            const deckParam = params.get('deck');
+            if (deckParam) {
+                const selectEl = document.getElementById('subject-select');
+                if (selectEl) {
+                    selectEl.value = deckParam;
+                    loadSelectedDeck();
+                }
+            }
+
+            // 2. Share Target / Note Taking / Protocol Handler (?shared_text=..., ?action=new-note, ?topic=...)
+            const sharedText = params.get('shared_text') || params.get('topic');
+            if (sharedText || params.get('action') === 'new-note') {
+                const note = prompt('Quick CFA Study Note:', sharedText ? decodeURIComponent(sharedText) : '');
+                if (note) {
+                    const notes = JSON.parse(localStorage.getItem('cfa_quick_notes') || '[]');
+                    notes.push({ text: note, date: new Date().toISOString() });
+                    localStorage.setItem('cfa_quick_notes', JSON.stringify(notes));
+                    alert('Saved to CFA Study Notes!');
+                }
+            }
+
+            // 3. File Handler (Open local .xlsx file directly with the PWA)
+            if ('launchQueue' in window) {
+                window.launchQueue.setConsumer(async launchParams => {
+                    if (!launchParams.files || !launchParams.files.length) return;
+                    const fileHandle = launchParams.files[0];
+                    const file = await fileHandle.getFile();
+                    const arrayBuffer = await file.arrayBuffer();
+                    const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                    const data = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
+                    currentDeck = data.slice(1).filter(r => r.length >= 3).map(r => ({ front: r[1] || '', back: r[2] || '', hint: r[3] || '' }));
+                    if (currentDeck.length > 0) {
+                        currentIndex = 0;
+                        document.getElementById('card-container').style.display = 'block';
+                        document.getElementById('controls').style.display = 'flex';
+                        document.getElementById('utilities').style.display = 'flex';
+                        document.getElementById('progress-container').style.display = 'block';
+                        updateCard();
+                    }
+                });
+            }
+        });
+
+        // Register Service Worker + Background Sync + Periodic Sync
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', async () => {
+                try {
+                    const reg = await navigator.serviceWorker.register('sw.js');
+                    if ('sync' in reg) {
+                        await reg.sync.register('sync-cfa-progress').catch(() => {});
+                    }
+                    if ('periodicSync' in reg) {
+                        const status = await navigator.permissions.query({ name: 'periodic-background-sync' }).catch(() => ({ state: 'denied' }));
+                        if (status.state === 'granted') {
+                            await reg.periodicSync.register('refresh-cfa-feed', { minInterval: 24 * 60 * 60 * 1000 });
+                        }
+                    }
+                } catch (e) {}
+            });
+        }
+    </script>
 </body>
 </html>
