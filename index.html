@@ -4,10 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>CFA Master Flashcards</title>
-    <!-- Use an emoji as a favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📈</text></svg>">
     
-    <!-- External Libraries -->
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
@@ -18,7 +16,7 @@
         
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg-color); color: var(--text-color); display: flex; flex-direction: column; align-items: center; padding: 15px; margin: 0; transition: background-color 0.3s, color 0.3s; overflow-x: hidden; }
         
-        .top-bar { width: 100%; max-width: 450px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .top-bar { width: 100%; max-width: 450px; display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-bottom: 15px; }
         .action-btn { padding: 8px 12px; font-size: 14px; background: #6c757d; color: white; border: none; border-radius: 20px; cursor: pointer; font-weight: 600; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .action-btn:active { transform: scale(0.95); }
         
@@ -45,14 +43,21 @@
         .nav-btn:disabled { background-color: #a0c3e8; cursor: not-allowed; box-shadow: none; }
         
         .utilities { display: none; width: 100%; max-width: 450px; justify-content: space-around; align-items: center; margin-bottom: 30px; }
-        
         .hint-text { margin-top: 15px; font-style: italic; color: #e67e22; display: none; font-size: 15px; padding: 12px; border-radius: 10px; background: rgba(230, 126, 34, 0.1); width: 100%; max-width: 450px; text-align: center; font-weight: 600; }
+
+        /* Read Mode (List View) CSS */
+        .list-container { display: none; width: 100%; max-width: 500px; margin-bottom: 30px; }
+        .list-item { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 15px; padding: 20px; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); text-align: left; }
+        .list-front { font-weight: 800; font-size: 18px; margin-bottom: 10px; color: var(--btn-primary); border-bottom: 2px solid var(--card-border); padding-bottom: 8px; }
+        .list-back { font-size: 16px; margin-bottom: 12px; line-height: 1.5; font-weight: 500; }
+        .list-hint { font-style: italic; font-size: 14px; color: #e67e22; background: rgba(230, 126, 34, 0.1); padding: 10px; border-radius: 8px; font-weight: 600; }
     </style>
 </head>
 <body>
 
     <div class="top-bar">
         <button class="action-btn" onclick="toggleDarkMode()" id="dark-mode-btn">🌙 Dark</button>
+        <button class="action-btn" onclick="toggleViewMode()" id="view-btn" style="display:none; background:#2c3e50;">📖 Read Mode</button>
         <button class="action-btn" onclick="shuffleDeck()" id="shuffle-btn" style="display:none; background:#8e44ad;">🔀 Shuffle</button>
         <button class="action-btn" onclick="resetProgress()" id="reset-btn" style="display:none; background:#e74c3c;">🔄 Reset</button>
     </div>
@@ -89,7 +94,7 @@
         <div class="progress-text" id="progress"></div>
     </div>
 
-    <!-- Wrapping card in a container to capture cleanly for Image Save -->
+    <!-- 3D Card View Mode -->
     <div id="capture-area" style="width: 100%; max-width: 450px; display: flex; justify-content: center;">
         <div class="card-container" id="card-container" onclick="flipCard()">
             <div class="card" id="card">
@@ -99,14 +104,17 @@
         </div>
     </div>
 
+    <!-- List View Mode -->
+    <div class="list-container" id="list-container"></div>
+
     <div class="controls" id="controls">
         <button class="nav-btn" onclick="prevCard()" id="btn-prev">⬅️ Prev</button>
         <button class="nav-btn" onclick="nextCard()" id="btn-next">Next ➡️</button>
     </div>
 
     <div class="utilities" id="utilities">
-        <button class="action-btn" onclick="toggleHint()" id="btn-hint" style="background-color: #f39c12;">💡 Hint</button>
-        <button class="action-btn" onclick="saveAsImage()" style="background-color: #27ae60;">📸 Save Image</button>
+        <button class="action-btn" onclick="toggleHint()" id="btn-hint" style="background-color: #f39c12; font-size: 16px; padding: 10px 20px;">💡 Show Hint</button>
+        <button class="action-btn" onclick="saveAsImage()" style="background-color: #27ae60; font-size: 16px; padding: 10px 20px;">📸 Save Image</button>
     </div>
     
     <div class="hint-text" id="hint-text"></div>
@@ -115,6 +123,7 @@
         let currentDeck = [];
         let currentIndex = 0;
         let currentFilename = "";
+        let isListView = false;
 
         // Initialization & Dark Mode
         if(localStorage.getItem('cfaDarkMode') === 'true') {
@@ -129,9 +138,50 @@
             document.getElementById('dark-mode-btn').innerText = isDark ? '☀️ Light' : '🌙 Dark';
         }
 
+        function toggleViewMode() {
+            isListView = !isListView;
+            const viewBtn = document.getElementById('view-btn');
+            
+            if (isListView) {
+                viewBtn.innerHTML = '🃏 Card Mode';
+                viewBtn.style.background = '#007bff';
+                document.getElementById('capture-area').style.display = 'none';
+                document.getElementById('controls').style.display = 'none';
+                document.getElementById('utilities').style.display = 'none';
+                document.getElementById('hint-text').style.display = 'none';
+                document.getElementById('list-container').style.display = 'block';
+                renderListView();
+            } else {
+                viewBtn.innerHTML = '📖 Read Mode';
+                viewBtn.style.background = '#2c3e50';
+                document.getElementById('capture-area').style.display = 'flex';
+                document.getElementById('controls').style.display = 'flex';
+                document.getElementById('utilities').style.display = 'flex';
+                document.getElementById('list-container').style.display = 'none';
+            }
+        }
+
+        function renderListView() {
+            const container = document.getElementById('list-container');
+            container.innerHTML = '';
+            currentDeck.forEach((card, idx) => {
+                let html = `<div class="list-item">
+                    <div class="list-front">${idx + 1}. ${card.front}</div>
+                    <div class="list-back">${card.back}</div>`;
+                if(card.hint) {
+                    html += `<div class="list-hint">💡 ${card.hint}</div>`;
+                }
+                html += `</div>`;
+                container.innerHTML += html;
+            });
+        }
+
         async function loadSelectedDeck() {
             currentFilename = document.getElementById('subject-select').value;
             if (!currentFilename) return;
+
+            // Reset view to cards when loading new deck
+            if(isListView) toggleViewMode();
 
             // Hide UI while loading
             document.getElementById('card-container').style.display = 'none';
@@ -140,6 +190,7 @@
             document.getElementById('hint-text').style.display = 'none';
             document.getElementById('shuffle-btn').style.display = 'none';
             document.getElementById('reset-btn').style.display = 'none';
+            document.getElementById('view-btn').style.display = 'none';
             document.getElementById('progress-container').style.display = 'none';
             document.getElementById('progress').innerText = 'Downloading deck from GitHub...';
 
@@ -158,16 +209,15 @@
                 }));
 
                 if (currentDeck.length > 0) {
-                    // Check LocalStorage for saved progress
                     let savedIndex = localStorage.getItem(`cfa_progress_${currentFilename}`);
                     currentIndex = savedIndex ? parseInt(savedIndex) : 0;
                     
-                    // Show UI
                     document.getElementById('card-container').style.display = 'block';
                     document.getElementById('controls').style.display = 'flex';
                     document.getElementById('utilities').style.display = 'flex';
                     document.getElementById('shuffle-btn').style.display = 'block';
                     document.getElementById('reset-btn').style.display = 'block';
+                    document.getElementById('view-btn').style.display = 'block';
                     document.getElementById('progress-container').style.display = 'block';
                     updateCard();
                 }
@@ -186,15 +236,12 @@
             document.getElementById('hint-text').style.display = 'none';
             document.getElementById('btn-hint').style.display = hintText ? 'block' : 'none';
             
-            // Save Progress
             localStorage.setItem(`cfa_progress_${currentFilename}`, currentIndex);
             
-            // Update Progress Bar
             const percent = ((currentIndex + 1) / currentDeck.length) * 100;
             document.getElementById('progress-bar-fill').style.width = percent + '%';
             document.getElementById('progress').innerText = `Card ${currentIndex + 1} of ${currentDeck.length}`;
             
-            // Manage Buttons
             document.getElementById('btn-prev').disabled = currentIndex === 0;
             
             if (currentIndex === currentDeck.length - 1) {
@@ -230,25 +277,17 @@
             alert("Deck Shuffled! (Progress tracking disabled for this session)");
         }
 
-        // Celebrate finishing a deck!
         function triggerConfetti() {
-            confetti({
-                particleCount: 150,
-                spread: 80,
-                origin: { y: 0.6 },
-                colors: ['#28a745', '#007bff', '#ffc107', '#dc3545']
-            });
+            confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors: ['#28a745', '#007bff', '#ffc107', '#dc3545'] });
         }
 
-        // Save Card as Image
         function saveAsImage() {
             const cardEl = document.getElementById('card');
             const originalTransform = cardEl.style.transform;
             
-            // Temporarily disable 3D transform for a clean 2D snapshot
             if (cardEl.classList.contains('is-flipped')) {
-                cardEl.style.transform = "rotateY(0deg)"; // temporarily unflip the parent container
-                document.getElementById('card-back').style.transform = "rotateY(0deg)"; // face back forward
+                cardEl.style.transform = "rotateY(0deg)";
+                document.getElementById('card-back').style.transform = "rotateY(0deg)";
                 document.getElementById('card-front').style.display = "none";
             }
             
@@ -258,16 +297,14 @@
                 link.href = canvas.toDataURL("image/png");
                 link.click();
                 
-                // Restore original CSS state
                 cardEl.style.transform = originalTransform;
                 document.getElementById('card-back').style.transform = "rotateY(180deg)";
                 document.getElementById('card-front').style.display = "flex";
             });
         }
 
-        // Keyboard & Swipe Support
         document.addEventListener('keydown', (e) => {
-            if(currentDeck.length === 0) return;
+            if(currentDeck.length === 0 || isListView) return;
             if (e.key === 'ArrowRight') nextCard();
             else if (e.key === 'ArrowLeft') prevCard();
             else if (e.key === ' ') { e.preventDefault(); flipCard(); }
@@ -278,8 +315,8 @@
         slider.addEventListener('touchstart', e => { touchstartX = e.changedTouches[0].screenX; });
         slider.addEventListener('touchend', e => { 
             touchendX = e.changedTouches[0].screenX; 
-            if (touchendX < touchstartX - 40) nextCard(); 
-            if (touchendX > touchstartX + 40) prevCard(); 
+            if (touchendX < touchstartX - 40 && !isListView) nextCard(); 
+            if (touchendX > touchstartX + 40 && !isListView) prevCard(); 
         });
     </script>
 </body>
